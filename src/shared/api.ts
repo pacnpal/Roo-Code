@@ -15,6 +15,7 @@ export type ApiProvider =
 	| "vscode-lm"
 	| "mistral"
 	| "unbound"
+| "azure-ai"
 
 export interface ApiHandlerOptions {
 	apiModelId?: string
@@ -60,6 +61,15 @@ export interface ApiHandlerOptions {
 	includeMaxTokens?: boolean
 	unboundApiKey?: string
 	unboundModelId?: string
+  azureAiEndpoint?: string
+  azureAiKey?: string
+  azureAiDeployments?: {
+    [key in AzureAiModelId]?: {
+      name: string
+      apiVersion: string
+      modelMeshName?: string
+    }
+  }
 }
 
 export type ApiConfiguration = ApiHandlerOptions & {
@@ -635,3 +645,50 @@ export const unboundModels = {
 	"deepseek/deepseek-reasoner": deepSeekModels["deepseek-reasoner"],
 	"mistral/codestral-latest": mistralModels["codestral-latest"],
 } as const satisfies Record<string, ModelInfo>
+
+// Azure AI
+export type AzureAiModelId = "azure-gpt-35" | "azure-gpt-4" | "azure-gpt-4-turbo"
+
+export interface AzureDeploymentConfig {
+  name: string
+  apiVersion: string
+  modelMeshName?: string // For Model-Mesh deployments
+}
+
+export const azureAiModels: Record<AzureAiModelId, ModelInfo & { defaultDeployment: AzureDeploymentConfig }> = {
+  "azure-gpt-35": {
+    maxTokens: 4096,
+    contextWindow: 16385,
+    supportsPromptCache: true,
+    inputPrice: 0.0015,
+    outputPrice: 0.002,
+    defaultDeployment: {
+      name: "azure-gpt-35",
+      apiVersion: "2024-02-15-preview"
+    }
+  },
+  "azure-gpt-4": {
+    maxTokens: 8192,
+    contextWindow: 8192,
+    supportsPromptCache: true,
+    inputPrice: 0.03,
+    outputPrice: 0.06,
+    defaultDeployment: {
+      name: "azure-gpt-4",
+      apiVersion: "2024-02-15-preview"
+    }
+  },
+  "azure-gpt-4-turbo": {
+    maxTokens: 4096,
+    contextWindow: 128000,
+    supportsPromptCache: true,
+    inputPrice: 0.01,
+    outputPrice: 0.03,
+    defaultDeployment: {
+      name: "azure-gpt-4-turbo",
+      apiVersion: "2024-02-15-preview"
+    }
+  }
+} as const satisfies Record<AzureAiModelId, ModelInfo & { defaultDeployment: AzureDeploymentConfig }>
+
+export const azureAiDefaultModelId: AzureAiModelId = "azure-gpt-35"

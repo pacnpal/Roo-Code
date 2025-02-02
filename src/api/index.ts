@@ -14,6 +14,7 @@ import { DeepSeekHandler } from "./providers/deepseek"
 import { MistralHandler } from "./providers/mistral"
 import { VsCodeLmHandler } from "./providers/vscode-lm"
 import { ApiStream } from "./transform/stream"
+import { AzureAiHandler } from "./providers/azure-ai"
 import { UnboundHandler } from "./providers/unbound"
 
 export interface SingleCompletionHandler {
@@ -56,7 +57,9 @@ export function buildApiHandler(configuration: ApiConfiguration): ApiHandler {
 			return new MistralHandler(options)
 		case "unbound":
 			return new UnboundHandler(options)
-		default:
+		case "azure-ai":
+return new AzureAiHandler(options)
+default:
 			return new AnthropicHandler(options)
 	}
 }
