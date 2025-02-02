@@ -2,22 +2,17 @@ import { Anthropic } from "@anthropic-ai/sdk"
 import ModelClient from "@azure-rest/ai-inference"
 import { isUnexpected } from "@azure-rest/ai-inference"
 import { AzureKeyCredential } from "@azure/core-auth"
-import {
-	ApiHandlerOptions,
-	ModelInfo,
-	azureAiDefaultModelId,
-	AzureAiModelId,
-	azureAiModels,
-	AzureDeploymentConfig,
-} from "../../shared/api"
+import { ApiHandlerOptions, ModelInfo, AzureDeploymentConfig } from "../../shared/api"
 import { ApiHandler, SingleCompletionHandler } from "../index"
 import { convertToOpenAiMessages } from "../transform/openai-format"
 import { ApiStream } from "../transform/stream"
-import { createSseStream } from "@azure/core-rest-pipeline"
+
+const DEFAULT_API_VERSION = "2024-02-15-preview"
+const DEFAULT_MAX_TOKENS = 4096
 
 export class AzureAiHandler implements ApiHandler, SingleCompletionHandler {
 	private options: ApiHandlerOptions
-	private client: ModelClient
+	private client: ReturnType<typeof ModelClient>
 
 	constructor(options: ApiHandlerOptions) {
 		this.options = options
@@ -30,22 +25,36 @@ export class AzureAiHandler implements ApiHandler, SingleCompletionHandler {
 			throw new Error("Azure AI key is required")
 		}
 
-		this.client = new ModelClient(options.azureAiEndpoint, new AzureKeyCredential(options.azureAiKey))
+		this.client = ModelClient(options.azureAiEndpoint, new AzureKeyCredential(options.azureAiKey))
 	}
 
 	private getDeploymentConfig(): AzureDeploymentConfig {
-		const model = this.getModel()
-		const defaultConfig = azureAiModels[model.id].defaultDeployment
+		const modelId = this.options.apiModelId
+		if (!modelId) {
+			return {
+				name: "gpt-35-turbo", // Default deployment name if none specified
+				apiVersion: DEFAULT_API_VERSION,
+			}
+		}
 
+		const customConfig = this.options.azureAiDeployments?.[modelId]
+		if (customConfig) {
+			return {
+				name: customConfig.name,
+				apiVersion: customConfig.apiVersion || DEFAULT_API_VERSION,
+				modelMeshName: customConfig.modelMeshName,
+			}
+		}
+
+		// If no custom config, use model ID as deployment name
 		return {
-			name: this.options.azureAiDeployments?.[model.id]?.name || defaultConfig.name,
-			apiVersion: this.options.azureAiDeployments?.[model.id]?.apiVersion || defaultConfig.apiVersion,
-			modelMeshName: this.options.azureAiDeployments?.[model.id]?.modelMeshName,
+			name: modelId,
+			apiVersion: DEFAULT_API_VERSION,
 		}
 	}
 
 	async *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {
-		const modelInfo = this.getModel().info
+		const deployment = this.getDeploymentConfig()
 		const chatMessages = [{ role: "system", content: systemPrompt }, ...convertToOpenAiMessages(messages)]
 
 		try {
@@ -56,12 +65,12 @@ export class AzureAiHandler implements ApiHandler, SingleCompletionHandler {
 						messages: chatMessages,
 						temperature: 0,
 						stream: true,
-						max_tokens: modelInfo.maxTokens,
-						response_format: { type: "text" }, // Ensure text format for chat
+						max_tokens: DEFAULT_MAX_TOKENS,
+						response_format: { type: "text" },
 					},
-					headers: this.getDeploymentConfig().modelMeshName
+					headers: deployment.modelMeshName
 						? {
-								"x-ms-model-mesh-model-name": this.getDeploymentConfig().modelMeshName,
+								"x-ms-model-mesh-model-name": deployment.modelMeshName,
 							}
 						: undefined,
 				})
@@ -69,22 +78,22 @@ export class AzureAiHandler implements ApiHandler, SingleCompletionHandler {
 
 			const stream = response.body
 			if (!stream) {
-				throw new Error(`Failed to get chat completions with status: ${response.status}`)
+				throw new Error("Failed to get chat completions stream")
 			}
 
-			if (response.status !== 200) {
-				throw new Error(`Failed to get chat completions: ${response.body.error}`)
+			const statusCode = Number(response.status)
+			if (statusCode !== 200) {
+				throw new Error(`Failed to get chat completions: HTTP ${statusCode}`)
 			}
 
-			const sseStream = createSseStream(stream)
-
-			for await (const event of sseStream) {
-				if (event.data === "[DONE]") {
+			for await (const chunk of stream) {
+				const chunkStr = chunk.toString()
+				if (chunkStr === "data: [DONE]\n\n") {
 					return
 				}
 
 				try {
-					const data = JSON.parse(event.data)
+					const data = JSON.parse(chunkStr.replace("data: ", ""))
 					const delta = data.choices[0]?.delta
 
 					if (delta?.content) {
@@ -124,26 +133,29 @@ export class AzureAiHandler implements ApiHandler, SingleCompletionHandler {
 		}
 	}
 
-	getModel(): { id: AzureAiModelId; info: ModelInfo } {
-		const modelId = this.options.apiModelId
-		if (modelId && modelId in azureAiModels) {
-			const id = modelId as AzureAiModelId
-			return { id, info: azureAiModels[id] }
+	getModel(): { id: string; info: ModelInfo } {
+		return {
+			id: this.options.apiModelId || "gpt-35-turbo",
+			info: {
+				maxTokens: DEFAULT_MAX_TOKENS,
+				contextWindow: 16385, // Conservative default
+				supportsPromptCache: true,
+			},
 		}
-		return { id: azureAiDefaultModelId, info: azureAiModels[azureAiDefaultModelId] }
 	}
 
 	async completePrompt(prompt: string): Promise<string> {
 		try {
+			const deployment = this.getDeploymentConfig()
 			const response = await this.client.path("/chat/completions").post({
 				body: {
 					messages: [{ role: "user", content: prompt }],
 					temperature: 0,
 					response_format: { type: "text" },
 				},
-				headers: this.getDeploymentConfig().modelMeshName
+				headers: deployment.modelMeshName
 					? {
-							"x-ms-model-mesh-model-name": this.getDeploymentConfig().modelMeshName,
+							"x-ms-model-mesh-model-name": deployment.modelMeshName,
 						}
 					: undefined,
 			})

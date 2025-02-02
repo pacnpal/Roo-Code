@@ -86,7 +86,7 @@ type GlobalStateKey =
 	| "lmStudioBaseUrl"
 	| "anthropicBaseUrl"
 	| "azureApiVersion"
-  | "azureAiDeployments"
+	| "azureAiDeployments"
 	| "openAiStreamingEnabled"
 	| "openRouterModelId"
 	| "openRouterModelInfo"
@@ -1075,16 +1075,25 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						await this.updateGlobalState("autoApprovalEnabled", message.bool ?? false)
 						await this.postStateToWebview()
 						break
-      case "updateAzureAiDeployment":
-        if (message.azureAiDeployment) {
-          const deployments = await this.getGlobalState("azureAiDeployments") || {}
-          deployments[message.azureAiDeployment.modelId] = {
-            ...message.azureAiDeployment,
-          }
-          await this.updateGlobalState("azureAiDeployments", deployments)
-          await this.postStateToWebview()
-        }
-        break
+					case "updateAzureAiDeployment":
+						if (message.azureAiDeployment) {
+							const deployments = ((await this.getGlobalState("azureAiDeployments")) || {}) as Record<
+								string,
+								{
+									name: string
+									apiVersion: string
+									modelMeshName?: string
+								}
+							>
+							deployments[message.azureAiDeployment.modelId] = {
+								name: message.azureAiDeployment.name,
+								apiVersion: message.azureAiDeployment.apiVersion,
+								modelMeshName: message.azureAiDeployment.modelMeshName,
+							}
+							await this.updateGlobalState("azureAiDeployments", deployments)
+							await this.postStateToWebview()
+						}
+						break
 					case "enhancePrompt":
 						if (message.text) {
 							try {
@@ -1517,7 +1526,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.storeSecret("openAiNativeApiKey", openAiNativeApiKey)
 		await this.storeSecret("deepSeekApiKey", deepSeekApiKey)
 		await this.updateGlobalState("azureApiVersion", azureApiVersion)
-    await this.updateGlobalState("azureAiDeployments", apiConfiguration.azureAiDeployments)
+		await this.updateGlobalState("azureAiDeployments", apiConfiguration.azureAiDeployments)
 		await this.updateGlobalState("openAiStreamingEnabled", openAiStreamingEnabled)
 		await this.updateGlobalState("openRouterModelId", openRouterModelId)
 		await this.updateGlobalState("openRouterModelInfo", openRouterModelInfo)
@@ -2159,7 +2168,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			openAiNativeApiKey,
 			deepSeekApiKey,
 			mistralApiKey,
-    azureAiDeployments,
+			azureAiDeployments,
 			azureApiVersion,
 			openAiStreamingEnabled,
 			openRouterModelId,
@@ -2234,7 +2243,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			this.getSecret("openAiNativeApiKey") as Promise<string | undefined>,
 			this.getSecret("deepSeekApiKey") as Promise<string | undefined>,
 			this.getSecret("mistralApiKey") as Promise<string | undefined>,
-    this.getGlobalState("azureAiDeployments") as Promise<Record<string, any> | undefined>,
+			this.getGlobalState("azureAiDeployments") as Promise<Record<string, any> | undefined>,
 			this.getGlobalState("azureApiVersion") as Promise<string | undefined>,
 			this.getGlobalState("openAiStreamingEnabled") as Promise<boolean | undefined>,
 			this.getGlobalState("openRouterModelId") as Promise<string | undefined>,
@@ -2327,7 +2336,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				deepSeekApiKey,
 				mistralApiKey,
 				azureApiVersion,
-    azureAiDeployments,
+				azureAiDeployments,
 				openAiStreamingEnabled,
 				openRouterModelId,
 				openRouterModelInfo,
