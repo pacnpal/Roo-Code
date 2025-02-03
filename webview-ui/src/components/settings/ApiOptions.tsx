@@ -39,6 +39,7 @@ import OpenRouterModelPicker, {
 	OPENROUTER_MODEL_PICKER_Z_INDEX,
 } from "./OpenRouterModelPicker"
 import OpenAiModelPicker from "./OpenAiModelPicker"
+import AzureAiModelPicker from "./AzureAiModelPicker"
 import GlamaModelPicker from "./GlamaModelPicker"
 
 interface ApiOptionsProps {
@@ -138,6 +139,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 					options={[
 						{ value: "openrouter", label: "OpenRouter" },
 						{ value: "anthropic", label: "Anthropic" },
+						{ value: "azure-ai", label: "Azure AI Model Inference" },
 						{ value: "gemini", label: "Google Gemini" },
 						{ value: "deepseek", label: "DeepSeek" },
 						{ value: "openai-native", label: "OpenAI" },
@@ -207,6 +209,8 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 					</p>
 				</div>
 			)}
+
+			{selectedProvider === "azure-ai" && <AzureAiModelPicker />}
 
 			{selectedProvider === "glama" && (
 				<div>
@@ -1555,6 +1559,12 @@ export function normalizeApiConfiguration(apiConfiguration?: ApiConfiguration) {
 				selectedProvider: provider,
 				selectedModelId: apiConfiguration?.openRouterModelId || openRouterDefaultModelId,
 				selectedModelInfo: apiConfiguration?.openRouterModelInfo || openRouterDefaultModelInfo,
+			}
+		case "azure-ai":
+			return {
+				selectedProvider: provider,
+				selectedModelId: apiConfiguration?.apiModelId || "",
+				selectedModelInfo: azureAiModelInfoSaneDefaults,
 			}
 		case "openai":
 			return {
