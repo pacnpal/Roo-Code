@@ -1564,7 +1564,7 @@ export function normalizeApiConfiguration(apiConfiguration?: ApiConfiguration) {
 			return {
 				selectedProvider: provider,
 				selectedModelId: apiConfiguration?.apiModelId || "",
-				selectedModelInfo: azureAiModelInfoSaneDefaults,
+				selectedModelInfo: openAiModelInfoSaneDefaults,
 			}
 		case "openai":
 			return {
