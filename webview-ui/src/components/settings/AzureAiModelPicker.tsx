@@ -246,7 +246,9 @@ const AzureAiModelPicker: React.FC = () => {
 							onClick: () => {
 								const apiConfig = {
 									...apiConfiguration,
-									azureAiModelConfig: azureAiModelInfoSaneDefaults,
+									azureAiModelConfig: {
+										...azureAiModelInfoSaneDefaults,
+									},
 								}
 								setApiConfiguration(apiConfig)
 								onUpdateApiConfig(apiConfig)
@@ -300,14 +302,12 @@ const AzureAiModelPicker: React.FC = () => {
 										const apiConfig = {
 											...apiConfiguration,
 											azureAiModelConfig: {
-												...(apiConfiguration?.azureAiModelConfig ||
-													azureAiModelInfoSaneDefaults),
+												...azureAiModelInfoSaneDefaults,
+												...(apiConfiguration?.azureAiModelConfig || {}),
 												contextWindow:
-													e.target.value === ""
-														? undefined
-														: isNaN(parsed)
-															? azureAiModelInfoSaneDefaults.contextWindow
-															: parsed,
+													isNaN(parsed) || e.target.value === ""
+														? azureAiModelInfoSaneDefaults.contextWindow
+														: parsed,
 											},
 										}
 										setApiConfiguration(apiConfig)
