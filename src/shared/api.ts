@@ -621,6 +621,16 @@ export const deepSeekModels = {
 // https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation
 // https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#api-specs
 export const azureOpenAiDefaultApiVersion = "2024-08-01-preview"
+export const azureAiModelInfoSaneDefaults: ModelInfo = {
+	maxTokens: -1, // Dynamic based on model
+	contextWindow: 128_000, // Conservative default
+	supportsImages: true,
+	supportsComputerUse: true,
+	supportsPromptCache: false,
+	inputPrice: 0,
+	outputPrice: 0,
+	description: "Azure AI Model Inference allows you to deploy and use any model through Azure's inference service.",
+}
 
 // Mistral
 // https://docs.mistral.ai/getting-started/models/models_overview/
@@ -648,14 +658,15 @@ export const unboundModels = {
 	"mistral/codestral-latest": mistralModels["codestral-latest"],
 } as const satisfies Record<string, ModelInfo>
 
-// Azure AI
-export type AzureAiModelId = "azure-gpt-35" | "azure-gpt-4" | "azure-gpt-4-turbo"
-
+// Azure AI Model Inference Configuration
 export interface AzureDeploymentConfig {
 	name: string
 	apiVersion: string
 	modelMeshName?: string // For Model-Mesh deployments
 }
+
+// Azure OpenAI Models
+export type AzureAiModelId = "azure-gpt-35" | "azure-gpt-4" | "azure-gpt-4-turbo"
 
 export const azureAiModels: Record<AzureAiModelId, ModelInfo & { defaultDeployment: AzureDeploymentConfig }> = {
 	"azure-gpt-35": {

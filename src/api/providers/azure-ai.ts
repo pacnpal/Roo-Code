@@ -9,6 +9,16 @@ import { ApiStream } from "../transform/stream"
 
 const DEFAULT_API_VERSION = "2024-05-01-preview"
 
+interface AzureErrorResponse {
+	status: number
+	body?: {
+		error?: {
+			message?: string
+		}
+	}
+	message: string
+}
+
 export class AzureAiHandler implements ApiHandler, SingleCompletionHandler {
 	private options: ApiHandlerOptions
 	private client: ReturnType<typeof ModelClient>
@@ -117,21 +127,18 @@ export class AzureAiHandler implements ApiHandler, SingleCompletionHandler {
 				}
 			}
 		} catch (error) {
-			if (error instanceof Error) {
-				// Handle Azure-specific error cases
-				if (isUnexpected(error) && error.status === 429) {
-					throw new Error("Azure AI rate limit exceeded. Please try again later.")
-				}
-				if (isUnexpected(error)) {
-					// Use proper Model Inference error handling
-					const message = error.body?.error?.message || error.message
-					if (error.status === 422) {
-						throw new Error(`Request validation failed: ${message}`)
-					}
-				}
-				throw new Error(`Azure AI error: ${error.message}`)
+			const azureError = error as AzureErrorResponse
+
+			// Check for specific error status codes
+			if (azureError.status === 429) {
+				throw new Error("Azure AI rate limit exceeded. Please try again later")
 			}
-			throw error
+			if (azureError.status === 422) {
+				const message = azureError.body?.error?.message || azureError.message
+				throw new Error(`Request validation failed: ${message}`)
+			}
+
+			throw new Error(`Azure AI error: ${azureError.message}`)
 		}
 	}
 
@@ -167,20 +174,18 @@ export class AzureAiHandler implements ApiHandler, SingleCompletionHandler {
 
 			return response.body.choices[0]?.message?.content || ""
 		} catch (error) {
-			if (error instanceof Error) {
-				// Handle Azure-specific error cases
-				if (isUnexpected(error) && error.status === 429) {
-					throw new Error("Azure AI rate limit exceeded. Please try again later.")
-				}
-				if (isUnexpected(error)) {
-					const message = error.body?.error?.message || error.message
-					if (error.status === 422) {
-						throw new Error(`Request validation failed: ${message}`)
-					}
-				}
-				throw new Error(`Azure AI completion error: ${error.message}`)
+			const azureError = error as AzureErrorResponse
+
+			// Check for specific error status codes
+			if (azureError.status === 429) {
+				throw new Error("Azure AI rate limit exceeded. Please try again later")
 			}
-			throw error
+			if (azureError.status === 422) {
+				const message = azureError.body?.error?.message || azureError.message
+				throw new Error(`Request validation failed: ${message}`)
+			}
+
+			throw new Error(`Azure AI completion error: ${azureError.message}`)
 		}
 	}
 }
