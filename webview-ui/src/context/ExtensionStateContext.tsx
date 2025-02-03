@@ -25,6 +25,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	glamaModels: Record<string, ModelInfo>
 	openRouterModels: Record<string, ModelInfo>
 	openAiModels: string[]
+	azureAiModels: string[]
 	mcpServers: McpServer[]
 	filePaths: string[]
 	openedTabs: Array<{ label: string; isActive: boolean; path?: string }>
@@ -123,6 +124,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	})
 
 	const [openAiModels, setOpenAiModels] = useState<string[]>([])
+	const [azureAiModels, setAzureAiModels] = useState<string[]>([])
 	const [mcpServers, setMcpServers] = useState<McpServer[]>([])
 
 	const setListApiConfigMeta = useCallback(
@@ -247,6 +249,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		glamaModels,
 		openRouterModels,
 		openAiModels,
+		azureAiModels,
 		mcpServers,
 		filePaths,
 		openedTabs,

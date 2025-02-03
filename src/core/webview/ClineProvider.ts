@@ -754,6 +754,15 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 							this.postMessageToWebview({ type: "openAiModels", openAiModels })
 						}
 						break
+					case "refreshAzureAiModels":
+						if (message?.values?.endpoint && message?.values?.key) {
+							const azureAiModels = await this.getAzureAiModels(
+								message?.values?.endpoint,
+								message?.values?.key,
+							)
+							this.postMessageToWebview({ type: "azureAiModels", azureAiModels })
+						}
+						break
 					case "openImage":
 						openImage(message.text!)
 						break
@@ -1645,6 +1654,28 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
+	// Azure AI
+
+	async getAzureAiModels(endpoint?: string, key?: string) {
+		try {
+			if (!endpoint || !key) {
+				return []
+			}
+
+			if (!URL.canParse(endpoint)) {
+				return []
+			}
+
+			const response = await axios.get(`${endpoint}/deployments`, {
+				headers: { "api-key": key },
+			})
+			const modelsArray = response.data?.value?.map((deployment: any) => deployment.name) || []
+			const models = [...new Set<string>(modelsArray)]
+			return models
+		} catch (error) {
+			return []
+		}
+	}
 	// OpenRouter
 
 	async handleOpenRouterCallback(code: string) {
