@@ -43,7 +43,7 @@ const AzureAiModelPicker: React.FC = () => {
 					{
 						iconName: "refresh",
 						onClick: () =>
-							handleInputChange("openAiCustomModelInfo")({
+							handleInputChange("azureAiModelConfig")({
 								target: { value: azureAiModelInfoSaneDefaults },
 							}),
 					},
@@ -84,7 +84,7 @@ const AzureAiModelPicker: React.FC = () => {
 						<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
 							<VSCodeTextField
 								value={
-									apiConfiguration?.openAiCustomModelInfo?.contextWindow?.toString() ||
+									apiConfiguration?.azureAiModelConfig?.contextWindow?.toString() ||
 									azureAiModelInfoSaneDefaults.contextWindow?.toString() ||
 									""
 								}
@@ -92,10 +92,10 @@ const AzureAiModelPicker: React.FC = () => {
 								style={{ width: "100%" }}
 								onChange={(e: any) => {
 									const parsed = parseInt(e.target.value)
-									handleInputChange("openAiCustomModelInfo")({
+									handleInputChange("azureAiModelConfig")({
 										target: {
 											value: {
-												...(apiConfiguration?.openAiCustomModelInfo ||
+												...(apiConfiguration?.azureAiModelConfig ||
 													azureAiModelInfoSaneDefaults),
 												contextWindow:
 													e.target.value === ""

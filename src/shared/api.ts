@@ -63,6 +63,7 @@ export interface ApiHandlerOptions {
 	unboundModelId?: string
 	azureAiEndpoint?: string
 	azureAiKey?: string
+	azureAiModelConfig?: ModelInfo
 	azureAiDeployments?:
 		| {
 				[key: string]: {

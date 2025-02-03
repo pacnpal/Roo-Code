@@ -19,6 +19,7 @@ import {
 	glamaDefaultModelInfo,
 	mistralDefaultModelId,
 	mistralModels,
+	azureAiModelInfoSaneDefaults,
 	openAiModelInfoSaneDefaults,
 	openAiNativeDefaultModelId,
 	openAiNativeModels,
@@ -1564,7 +1565,7 @@ export function normalizeApiConfiguration(apiConfiguration?: ApiConfiguration) {
 			return {
 				selectedProvider: provider,
 				selectedModelId: apiConfiguration?.apiModelId || "",
-				selectedModelInfo: openAiModelInfoSaneDefaults,
+				selectedModelInfo: azureAiModelInfoSaneDefaults,
 			}
 		case "openai":
 			return {
